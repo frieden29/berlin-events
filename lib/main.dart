@@ -83,12 +83,11 @@ class BerlinEventsApp extends StatelessWidget {
   }
 }
 
+// ثلاثة خيارات فقط للتصفية.
 enum EventFilter {
-  all,
   today,
   tomorrow,
   dayAfterTomorrow,
-  custom,
 }
 
 class EventsPage extends StatefulWidget {
@@ -104,8 +103,8 @@ class _EventsPageState extends State<EventsPage> {
   bool loading = true;
   String? error;
 
-  EventFilter selectedFilter = EventFilter.all;
-  DateTime? selectedDate;
+  // عرض فعاليات اليوم افتراضيًا.
+  EventFilter selectedFilter = EventFilter.today;
 
   @override
   void initState() {
@@ -167,60 +166,37 @@ class _EventsPageState extends State<EventsPage> {
     );
   }
 
+  // تصفية الفعاليات حسب اليوم المحدد فقط.
   List<BerlinEvent> get filteredEvents {
     final today = dateOnly(DateTime.now());
 
-    DateTime? target;
+    late final DateTime target;
 
     switch (selectedFilter) {
-      case EventFilter.all:
-        return events.where((event) {
-          return !dateOnly(event.date).isBefore(today);
-        }).toList();
-
       case EventFilter.today:
         target = today;
         break;
 
       case EventFilter.tomorrow:
-        target = today.add(const Duration(days: 1));
+        target = DateTime(
+          today.year,
+          today.month,
+          today.day + 1,
+        );
         break;
 
       case EventFilter.dayAfterTomorrow:
-        target = today.add(const Duration(days: 2));
-        break;
-
-      case EventFilter.custom:
-        target = selectedDate;
+        target = DateTime(
+          today.year,
+          today.month,
+          today.day + 2,
+        );
         break;
     }
-
-    if (target == null) return [];
 
     return events.where((event) {
       return dateOnly(event.date) == target;
     }).toList();
-  }
-
-  Future<void> chooseDate() async {
-    final now = DateTime.now();
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 5),
-      helpText: 'Datum auswählen',
-      cancelText: 'Abbrechen',
-      confirmText: 'Auswählen',
-    );
-
-    if (picked == null) return;
-
-    setState(() {
-      selectedDate = picked;
-      selectedFilter = EventFilter.custom;
-    });
   }
 
   Future<void> openNavigation(BerlinEvent event) async {
@@ -441,14 +417,11 @@ class _EventsPageState extends State<EventsPage> {
 
                           const SizedBox(height: 16),
 
+                          // الأزرار الثلاثة فقط.
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              filterButton(
-                                'Alle',
-                                EventFilter.all,
-                              ),
                               filterButton(
                                 'Heute',
                                 EventFilter.today,
@@ -460,20 +433,6 @@ class _EventsPageState extends State<EventsPage> {
                               filterButton(
                                 'Übermorgen',
                                 EventFilter.dayAfterTomorrow,
-                              ),
-                              ActionChip(
-                                avatar: const Icon(
-                                  Icons.date_range,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  selectedFilter ==
-                                              EventFilter.custom &&
-                                          selectedDate != null
-                                      ? formatDate(selectedDate!)
-                                      : 'Datum auswählen',
-                                ),
-                                onPressed: chooseDate,
                               ),
                             ],
                           ),
